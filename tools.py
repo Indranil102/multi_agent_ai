@@ -4,7 +4,23 @@ from bs4 import BeautifulSoup
 from tavily import TavilyClient
 import os
 from dotenv import load_dotenv
+from rich import print
 load_dotenv()
 
 
-tavily= TavilyClient(api_key=os.getenv("TAVALY_API_KEY"))
+tavily= TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
+
+#first tool to fetch live web result
+@tool
+def web_search(query: str) -> str:
+    """"Search the web for recent and reliable information on a topic. Returns Titles, URLs and Snippets."""
+    
+    results=tavily.search(query=query, max_results=3)
+    out =[]
+    for r in results['results']:
+        out.append(
+            f"Title: {r['title']} \nURL: {r['url']} \nSnippet: {r['content'][:300]} \n"
+        )
+    return  "\n--------\n".join(out)
+
+print(web_search.invoke("What is the capital of France?"))
