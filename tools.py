@@ -19,8 +19,19 @@ def web_search(query: str) -> str:
     out =[]
     for r in results['results']:
         out.append(
-            f"Title: {r['title']} \nURL: {r['url']} \nSnippet: {r['content'][:300]} \n"
+            f"Title: {r['title']} \nURL: {r['url']} \nSnippet: {r['content'][:500]} \n"
         )
     return  "\n--------\n".join(out)
 
-print(web_search.invoke("What is the capital of France?"))
+
+@tool
+def scrape_url(url: str)->str:
+    """Scrape and return clean text from a givven URL for deeper readin g"""
+    try:
+        resp= requests.get(url, timeout=8, headers={"User-Agent": "Mozilla/5.0"})
+        soup= BeautifulSoup(resp.text, 'html.parser')
+        for tag in soup(['script','style','nav','footer']):
+            tag.decompose()
+        return soup.get_text(separator=" ", strip=True)[:300]
+    except Exception as e:
+        return f"Error scraping the URL: {str(e)}"
