@@ -36,4 +36,5 @@ def scrape_url(url: str)->str:
     except Exception as e:
         return f"Error scraping the URL: {str(e)}"
 
-print(scrape_url.invoke("https://news.google.com/home?hl=en-IN&gl=IN&ceid=IN:en"))
+
+
