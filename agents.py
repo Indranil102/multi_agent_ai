@@ -28,4 +28,28 @@ def build_scraping_agent():
         tools=[scrape_url
         ]
     )
-    
+
+# now we creating chain of agents
+
+#using LCEL runnable pipeline 
+#3 use the writer chain using LCEL pipe which takes all the research and writesa full report 
+writer_prompt= ChatPromptTemplate.from_messages([
+    ("System", "You area an expert research writer. Write clear, strucutred and insightful report"),
+
+    ("Human",f""" Write a detailed research report on the topic below.
+    Topic:{topic}
+    Research Gathered:
+    {research}
+
+    Structure the report as:
+    - Introduction
+    - Key FIndings (minimum 2 well -explained points)
+    - Conclusion 
+    - Sources (List all URLs foud in the research)
+
+    Be detailed and include all the information from the research.
+    """)
+
+])
+
+#4 cretic chain which reads the report and gives a score and feedback
