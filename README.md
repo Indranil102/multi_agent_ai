@@ -48,11 +48,11 @@ Your original `pipeline.py` (terminal version) still works exactly as before
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
+source venv/bin/activate          
 pip install -r requirements.txt
-pip install -r ../requirements.txt   # your original deps (langchain, etc.)
+pip install -r ../requirements.txt   
 
-# copy your real agents.py / tools.py here first, see above
+
 
 uvicorn main:app --reload --port 8000
 ```
