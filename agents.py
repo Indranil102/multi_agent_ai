@@ -1,3 +1,5 @@
+import os
+
 from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -7,8 +9,14 @@ from tools import web_search, scrape_url
 
 from dotenv import load_dotenv
 load_dotenv()
-# model setup
-llm= ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+# model setup (OpenRouter is OpenAI-compatible)
+llm = ChatOpenAI(
+    model="openai/gpt-4o-mini",
+    temperature=0,
+    api_key=os.getenv("OPENROUTER_API_KEY"),
+    base_url="https://openrouter.ai/api/v1",
+)
 
 #creating agent
 #agent 1 search agent 
@@ -34,10 +42,10 @@ def build_scraping_agent():
 #using LCEL runnable pipeline 
 #3 use the writer chain using LCEL pipe which takes all the research and writesa full report 
 writer_prompt= ChatPromptTemplate.from_messages([
-    ("System", "You area an expert research writer. Write clear, strucutred and insightful report"),
+    ("system", "You area an expert research writer. Write clear, strucutred and insightful report"),
 
-    ("Human",f""" Write a detailed research report on the topic below.
-    Topic:{topic}
+    ("human", """ Write a detailed research report on the topic below.
+    Topic: {topic}
     Research Gathered:
     {research}
 
@@ -81,4 +89,4 @@ critic_prompt= ChatPromptTemplate.from_messages([
     ..."""),
 ])
  
- critic_chain= critic_prompt | llm | StrOutputParser()
+critic_chain= critic_prompt | llm | StrOutputParser()
