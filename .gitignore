@@ -1,34 +1,21 @@
-# Python
+# macOS
+.DS_Store
+
+# Python (root-level artifacts)
 __pycache__/
 *.py[cod]
 *$py.class
-
-# Virtual environments
+.venv/
 venv/
+
+# Environment / secrets
 .env
 .env.*
 
-# Editor directories and files
+# Editor
 .vscode/
 .idea/
 *.swp
 
 # Logs
 *.log
-
-# Byte-compiled / optimized / DLL files
-*.pyc
-*.pyo
-*.pyd
-
-# Distribution / packaging
-build/
-dist/
-*.egg-info/
-.eggs/
-
-# Jupyter Notebook checkpoints
-.ipynb_checkpoints/
-
-# macOS
-.DS_Store
