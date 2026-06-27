@@ -1,13 +1,3 @@
-"""
-FastAPI backend for the multi-agent research pipeline.
-
-This wraps your existing pipeline.py logic (search -> scrape -> write -> critique)
-and streams progress to the frontend as Server-Sent Events (SSE), so the UI can
-show live updates instead of waiting for the whole pipeline to finish.
-
-Run with:
-    uvicorn main:app --reload --port 8000
-"""
 
 import json
 import traceback

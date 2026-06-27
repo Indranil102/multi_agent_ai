@@ -218,9 +218,9 @@ export default function App() {
         <div className="mx-auto flex max-w-5xl items-center justify-between">
           <div>
             <h1 className="font-mono text-sm uppercase tracking-[0.2em] text-signal">
-              Research Pipeline
+              Research Agent
             </h1>
-            <p className="mt-1 text-sm text-muted">Search agent → Scraper → Writer → Critic</p>
+            <p className="mt-1 text-sm text-muted">Research Multi Agent</p>
           </div>
         </div>
       </header>
@@ -248,7 +248,7 @@ export default function App() {
               </>
             ) : (
               <>
-                Run pipeline <ArrowRight size={16} />
+                Search <ArrowRight size={16} />
               </>
             )}
           </button>
