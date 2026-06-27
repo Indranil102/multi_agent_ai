@@ -1,5 +1,6 @@
 
 import json
+import os
 import traceback
 from typing import AsyncGenerator
 
@@ -12,10 +13,16 @@ from agents import build_search_agent, build_scraping_agent, writer_chain, criti
 
 app = FastAPI(title="Multi-Agent Research Pipeline API")
 
-# Allow the React dev server (default Vite port) to call this API.
+_default_origins = "http://localhost:5173,http://127.0.0.1:5173"
+allow_origins = [
+    origin.strip()
+    for origin in os.getenv("CORS_ORIGINS", _default_origins).split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=allow_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
