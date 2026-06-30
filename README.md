@@ -232,8 +232,3 @@ comma-separated `CORS_ORIGINS` value.
   linked sources before relying on them.
 - Research requests consume both Tavily and OpenRouter API quota.
 
-## Contributing
-
-Contributions are welcome. Keep secrets out of commits, run
-`npm run build` after frontend changes, and manually exercise both the health
-endpoint and the complete four-stage pipeline after backend changes.
