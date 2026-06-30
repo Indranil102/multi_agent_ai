@@ -1,100 +1,239 @@
-# Research Pipeline UI
+# Multi-Agent Research AI
 
-A React + Tailwind frontend on top of your existing multi-agent pipeline
-(`pipeline.py` → search agent → scraping agent → writer chain → critic chain),
-served through a small FastAPI backend that streams progress live.
+A full-stack research assistant that searches the live web, reads a relevant
+source, writes a structured report, and critiques the result. The four-stage
+pipeline is orchestrated with LangChain, exposed as a streaming FastAPI API,
+and visualized in a React and Tailwind CSS interface.
 
+## What it does
+
+Given a research topic, the application runs these stages in order:
+
+1. **Search agent** — calls Tavily and returns recent titles, URLs, and
+   snippets.
+2. **Reader agent** — selects a relevant result and uses Requests with
+   Beautiful Soup to extract readable page content.
+3. **Writer chain** — combines the search results and scraped content into a
+   structured research report.
+4. **Critic chain** — scores the report, identifies strengths and weaknesses,
+   and gives a final verdict.
+
+FastAPI sends stage updates as Server-Sent Events (SSE), so the frontend can
+show progress and results as the pipeline runs.
+
+```text
+Research topic
+     |
+     v
+Tavily search agent
+     |
+     v
+Beautiful Soup reader agent
+     |
+     v
+Writer chain (prompt -> LLM -> text parser)
+     |
+     v
+Critic chain (prompt -> LLM -> text parser)
+     |
+     v
+Streaming FastAPI response -> React UI
 ```
-research-ui/
+
+## Tech stack
+
+- **AI orchestration:** LangChain agents and LCEL chains
+- **LLM:** `openai/gpt-4o-mini` through OpenRouter's OpenAI-compatible API
+- **Research tools:** Tavily, Requests, and Beautiful Soup
+- **Backend:** FastAPI, Pydantic, Uvicorn, and SSE
+- **Frontend:** React, Vite, Tailwind CSS, and Lucide React
+- **Deployment configuration:** Render for the API and Vercel for the frontend
+
+## Repository structure
+
+```text
+multi_agent_ai/
 ├── backend/
-│   ├── main.py            FastAPI app — wraps run_research_pipeline, streams via SSE
-│   └── requirements.txt
-└── frontend/
-    ├── src/
-    │   ├── App.jsx         Main UI: pipeline rail + tabbed output viewer
-    │   ├── main.jsx
-    │   └── index.css
-    ├── index.html
-    ├── package.json
-    ├── tailwind.config.js
-    ├── postcss.config.js
-    └── vite.config.js
+│   ├── agents.py          Agent definitions, prompts, writer, and critic chains
+│   ├── tools.py           Tavily search and Beautiful Soup scraping tools
+│   ├── pipeline.py        Command-line version of the research pipeline
+│   ├── main.py            FastAPI app and streaming pipeline endpoint
+│   └── requirements.txt   Python dependencies
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx        Pipeline UI and SSE response handling
+│   │   ├── main.jsx       React entry point
+│   │   └── index.css      Tailwind and global styles
+│   ├── package.json
+│   ├── vite.config.js
+│   └── vercel.json        Vercel SPA configuration
+├── render.yaml            Render backend configuration
+└── README.md
 ```
 
-## How it fits with your existing code
+## Prerequisites
 
-`backend/main.py` does NOT replace `pipeline.py` — it re-implements the same
-4 steps as an async generator so it can `yield` a progress event after each
-step instead of just `print()`-ing. It imports `build_search_agent`,
-`build_scraping_agent`, `writer_chain`, and `critic_chain` directly from your
-`agents.py`, unchanged.
+- Python 3.10 or newer (the Render configuration uses Python 3.12)
+- Node.js 18 or newer
+- A [Tavily](https://tavily.com/) API key
+- An [OpenRouter](https://openrouter.ai/) API key with access to
+  `openai/gpt-4o-mini`
 
-**You need to copy your real `agents.py` and `tools.py` into `backend/`**
-before running it — I only had `pipeline.py`, not those two files, so I
-couldn't include them.
+## Local setup
 
-```bash
-cp /path/to/your/project/agents.py backend/
-cp /path/to/your/project/tools.py backend/
-```
-
-Your original `pipeline.py` (terminal version) still works exactly as before
-— this doesn't touch it. The backend is a separate entry point.
-
-## Setup
-
-### 1. Backend
+### 1. Start the backend
 
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate          
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-pip install -r ../requirements.txt   
+```
 
+On Windows PowerShell, activate the environment with:
 
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
 
+Create `backend/.env`:
+
+```env
+TAVILY_API_KEY=your_tavily_api_key
+OPENROUTER_API_KEY=your_openrouter_api_key
+CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+```
+
+Then run the API:
+
+```bash
 uvicorn main:app --reload --port 8000
 ```
 
-Confirm it's up: open http://localhost:8000/api/health → `{"status": "ok"}`
+Check that it is available at
+[`http://localhost:8000/api/health`](http://localhost:8000/api/health).
 
-### 2. Frontend
+### 2. Start the frontend
 
 In a second terminal:
 
 ```bash
 cd frontend
 npm install
+```
+
+Create `frontend/.env`:
+
+```env
+VITE_API_URL=http://localhost:8000
+```
+
+Start Vite:
+
+```bash
 npm run dev
 ```
 
-Open the URL it prints (default http://localhost:5173).
+Open [`http://localhost:5173`](http://localhost:5173), enter a topic, and
+select **Search**. Each pipeline stage unlocks its output tab when it finishes.
 
-## Using it
+> Environment files are ignored by Git. Never commit real API keys.
 
-1. Type a topic, click **Run pipeline** (or press Enter).
-2. The rail at the top lights up stage by stage as each agent finishes —
-   amber + spinner while running, teal when done.
-3. Click any tab (Search results / Scraped content / Report / Critic feedback)
-   to read that stage's output — tabs unlock as their stage completes.
-4. **Copy** button on each output panel copies the raw text.
+## API
 
-If a stage throws an exception, the rail node turns red, an error banner
-appears with the exception message, and remaining stages are marked as
-not completed — nothing silently hangs.
+### Health check
 
-## Notes / things you may want to tweak
+```http
+GET /api/health
+```
 
-- **CORS**: `backend/main.py` only allows `localhost:5173` (Vite's default
-  port). If you change the frontend port, update `allow_origins` in `main.py`.
-- **API URL**: hardcoded as `http://localhost:8000` in `frontend/src/App.jsx`
-  (`API_BASE` constant). Change this if you deploy the backend elsewhere.
-- **Long-running agents**: if any of your agents/chains take a long time,
-  the SSE connection stays open the whole time — no timeout is set
-  client-side, but check your reverse proxy / hosting config if you deploy
-  this, since some proxies kill idle streaming connections after ~30-60s.
-- **Markdown rendering**: the report/feedback are currently rendered as
-  plain preformatted text. If `writer_chain` or `critic_chain` return
-  Markdown, you may want to add a renderer (e.g. `react-markdown`) instead
-  of the `<pre>` tag in `App.jsx`.
+Response:
+
+```json
+{"status": "ok"}
+```
+
+### Run streamed research
+
+```http
+POST /api/research/stream
+Content-Type: application/json
+```
+
+Request body:
+
+```json
+{
+  "topic": "Recent advances in quantum error correction"
+}
+```
+
+Test the stream from a terminal:
+
+```bash
+curl -N -X POST http://localhost:8000/api/research/stream \
+  -H "Content-Type: application/json" \
+  -d '{"topic":"Recent advances in quantum error correction"}'
+```
+
+The endpoint emits:
+
+- `status` while a `search`, `scrape`, `write`, or `critic` stage is running or
+  completes
+- `complete` with `search_result`, `scraped_content`, `report`, and `feedback`
+- `error` with an error message if the pipeline stops
+
+## Command-line usage
+
+The same research workflow can run without the web application:
+
+```bash
+cd backend
+source .venv/bin/activate
+python pipeline.py
+```
+
+Enter a topic when prompted. Intermediate results, the final report, and the
+critic feedback are printed in the terminal.
+
+## Deployment
+
+### Backend on Render
+
+The root `render.yaml` installs the backend dependencies, starts Uvicorn, and
+configures the health check. Set these environment variables in Render:
+
+```env
+TAVILY_API_KEY=...
+OPENROUTER_API_KEY=...
+CORS_ORIGINS=https://your-frontend-domain.example
+```
+
+### Frontend on Vercel
+
+Deploy the `frontend` directory and set:
+
+```env
+VITE_API_URL=https://your-backend-domain.example
+```
+
+Redeploy the frontend after changing a `VITE_*` variable because Vite embeds
+it at build time. Add every allowed frontend origin to the backend's
+comma-separated `CORS_ORIGINS` value.
+
+## Current behavior and limitations
+
+- Tavily returns up to three search results per request.
+- The reader agent scrapes one selected page and keeps up to 3,000 characters
+  of cleaned text.
+- Pages that require authentication, execute content only in JavaScript, or
+  block automated requests may not be readable.
+- Generated reports can contain mistakes. Verify important claims against the
+  linked sources before relying on them.
+- Research requests consume both Tavily and OpenRouter API quota.
+
+## Contributing
+
+Contributions are welcome. Keep secrets out of commits, run
+`npm run build` after frontend changes, and manually exercise both the health
+endpoint and the complete four-stage pipeline after backend changes.
